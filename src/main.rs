@@ -45,6 +45,13 @@ struct Cli {
 
     #[arg(
         long,
+        default_value_t = 0.05,
+        help = "Probability of a new drop spawning in an empty column (0.0 - 1.0)"
+    )]
+    drop_prob: f32,
+
+    #[arg(
+        long,
         default_value_t = 12,
         help = "Frames per second (clamped between 1 and 15)"
     )]
@@ -76,12 +83,12 @@ fn main() -> std::io::Result<()> {
     let glitch_prob = if cli.no_glitch { 0.0 } else { cli.glitch_prob as f32 };
     let flicker_prob = if cli.no_flicker { 0.0 } else { cli.flicker_prob as f32 };
 
+    // Set values before launching
     matrix::set_glitch_probability(glitch_prob);
     matrix::set_flicker_probability(flicker_prob);
-
     matrix::set_min_trail(cli.min_trail);
     matrix::set_max_trail(cli.max_trail);
-
+    matrix::set_new_drop_probability(cli.drop_prob);
     matrix::set_framerate(cli.fps as f32);
 
     // Prebuild combined charset vector once

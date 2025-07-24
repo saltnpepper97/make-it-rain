@@ -1,4 +1,3 @@
-use clap::Parser;
 use crossterm::{
     cursor::{Hide, MoveTo, Show},
     event::{poll, read, Event, KeyCode, KeyModifiers},
@@ -61,7 +60,7 @@ const SPEED_VARIATION: f32 = 0.3;
 const CHAR_CHANGE_PROBABILITY: f32 = 0.2;
 static GLITCH_PROBABILITY_ATOMIC: AtomicU32 = AtomicU32::new((0.003_f32).to_bits());
 static FLICKER_PROBABILITY_ATOMIC: AtomicU32 = AtomicU32::new((0.01_f32).to_bits());
-const NEW_DROP_PROBABILITY: f32 = 0.15;
+static NEW_DROP_PROBABILITY_ATOMIC: AtomicU32 = AtomicU32::new((0.05_f32).to_bits());
 const SPEED_JITTER_PROBABILITY: f64 = 0.02;
 const SPEED_JITTER_AMOUNT: f32 = 0.05;
 
@@ -73,7 +72,7 @@ pub struct MatrixDrop<'a> {
     speed: f32,
     chars: Vec<char>,
     last_update: Instant,
-    active: bool,
+    _active: bool,
     char_change_timers: Vec<Instant>,
     charset: &'a [char],
 }
@@ -94,7 +93,7 @@ impl<'a> MatrixDrop<'a> {
             speed,
             chars,
             last_update: Instant::now(),
-            active: true,
+            _active: true,
             char_change_timers,
             charset,
         }
@@ -256,7 +255,7 @@ pub fn run_matrix(
         let now = Instant::now();
         if now.duration_since(last_spawn_check).as_secs_f32() > 0.2 {
             for (x, drop_slot) in drops.iter_mut().enumerate() {
-                if drop_slot.is_none() && rng.r#gen::<f32>() < NEW_DROP_PROBABILITY {
+                if drop_slot.is_none() && rng.r#gen::<f32>() < get_new_drop_probability() {
                     *drop_slot = Some(MatrixDrop::new(x as u16, rows, charset));
                 }
             }
@@ -326,4 +325,13 @@ pub fn set_max_trail(len: usize) {
 
 pub fn get_max_trail() -> usize {
     MAX_TRAIL_ATOMIC.load(Ordering::Relaxed) as usize
+}
+
+pub fn set_new_drop_probability(prob: f32) {
+    let prob = prob.clamp(0.0, 1.0);
+    NEW_DROP_PROBABILITY_ATOMIC.store(prob.to_bits(), Ordering::Relaxed);
+}
+
+pub fn get_new_drop_probability() -> f32 {
+    f32::from_bits(NEW_DROP_PROBABILITY_ATOMIC.load(Ordering::Relaxed))
 }
