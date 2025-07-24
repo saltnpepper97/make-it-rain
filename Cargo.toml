@@ -1,0 +1,10 @@
+[package]
+name = "make-it-rain"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.5.41", features = ["derive"] }
+crossterm = "0.27"
+ctrlc = "3.2"
+rand = "0.8"
