@@ -21,8 +21,8 @@ A fast, customizable **Matrix rain animation** for your terminal written in Rust
 ---
 
 ## ⚙️ Options
-
-` -D, --debug                        Enable debug output
+```
+  -D, --debug                        Enable debug output
   -n, --drops <DROPS>                Initial number of active drops [default: 10]
       --rgb                          Enable RGB fade coloring instead of preset green steps
       --min-trail <MIN_TRAIL>        Minimum trail length (clamped between 4 and 40, cannot exceed --max-trail) [default: 8]
@@ -38,7 +38,7 @@ A fast, customizable **Matrix rain animation** for your terminal written in Rust
       --no-flicker                   Disable flickering effects entirely
   -h, --help                         Print help
   -V, --version                      Print version
-`
+```
 
 ---
 
