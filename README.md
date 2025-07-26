@@ -1,6 +1,8 @@
 # 🌧️ Make It Rain - Terminal Matrix Effect
 
-![Demo](assets/mir.gif)
+<p align="center">
+  <img src="assets/mir.gif" alt="Demo" />
+</p>
 
 A fast, customizable **Matrix rain animation** for your terminal written in Rust. Featuring smooth trails, RGB mode, drop glitching, and full control over the look and feel.
 
