@@ -64,6 +64,23 @@ struct Cli {
     )]
     palette: String,
 
+    #[arg(
+        long,
+        default_value_t = 0.02,
+        help = "Probability a drop leaves a stuck character when it resets (0.0 - 1.0)"
+    )]
+    stuck_prob: f32,
+
+    #[arg(
+        long,
+        default_value_t = 0,
+        help = "Maximum number of stuck characters to retain on screen at once (0 = unlimited)"
+    )]
+    stuck_max: usize,
+
+    #[arg(long, help = "Disable stuck characters entirely")]
+    no_stuck: bool,
+
     #[arg(long, help = "Disable glitch effects entirely")]
     no_glitch: bool,
 
@@ -82,7 +99,8 @@ fn main() -> std::io::Result<()> {
     // Set glitch and flicker probabilities based on CLI flags and values
     let glitch_prob = if cli.no_glitch { 0.0 } else { cli.glitch_prob as f32 };
     let flicker_prob = if cli.no_flicker { 0.0 } else { cli.flicker_prob as f32 };
-
+    let stuck_prob = if cli.no_stuck { 0.0 } else { cli.stuck_prob.clamp(0.0, 1.0) };
+    
     // Set values before launching
     matrix::set_glitch_probability(glitch_prob);
     matrix::set_flicker_probability(flicker_prob);
@@ -90,6 +108,8 @@ fn main() -> std::io::Result<()> {
     matrix::set_max_trail(cli.max_trail);
     matrix::set_new_drop_probability(cli.drop_prob);
     matrix::set_framerate(cli.fps as f32);
+    matrix::set_stuck_probability(stuck_prob);
+    matrix::set_stuck_max(cli.stuck_max);
 
     // Prebuild combined charset vector once
     let combined_charset: Vec<char> = {
