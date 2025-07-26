@@ -1,10 +1,14 @@
-use clap::Parser;
-
 mod matrix;
 
+use clap::Parser;
+
 #[derive(Parser, Debug)]
-#[command(name = "mir")]
-#[command(about = "Make-it-Rain: Matrix rain effect", long_about = None)]
+#[command(
+    name = "mir",
+    about = "Make-it-Rain: Matrix rain effect",
+    long_about = None,
+    version = env!("CARGO_PKG_VERSION")
+)]
 struct Cli {
     #[arg(short = 'D', long, help = "Enable debug output")]
     debug: bool,
@@ -45,6 +49,13 @@ struct Cli {
 
     #[arg(
         long,
+        default_value = "0.02",
+        help = "Probability (0.0–1.0) that a falling drop leaves a character stuck on screen when it resets. Lower = fewer stuck characters"
+    )]
+    stuck_prob: f32,
+    
+    #[arg(
+        long,
         default_value_t = 0.05,
         help = "Probability of a new drop spawning in an empty column (0.0 - 1.0)"
     )]
@@ -64,21 +75,7 @@ struct Cli {
     )]
     palette: String,
 
-    #[arg(
-        long,
-        default_value_t = 0.02,
-        help = "Probability a drop leaves a stuck character when it resets (0.0 - 1.0)"
-    )]
-    stuck_prob: f32,
-
-    #[arg(
-        long,
-        default_value_t = 0,
-        help = "Maximum number of stuck characters to retain on screen at once (0 = unlimited)"
-    )]
-    stuck_max: usize,
-
-    #[arg(long, help = "Disable stuck characters entirely")]
+    #[arg(long = "no-stuck", help = "Disable stuck characters (characters remain after drop moves)")]
     no_stuck: bool,
 
     #[arg(long, help = "Disable glitch effects entirely")]
@@ -87,7 +84,6 @@ struct Cli {
     #[arg(long, help = "Disable flickering effects entirely")]
     no_flicker: bool,
 }
-
 
 fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
@@ -99,17 +95,14 @@ fn main() -> std::io::Result<()> {
     // Set glitch and flicker probabilities based on CLI flags and values
     let glitch_prob = if cli.no_glitch { 0.0 } else { cli.glitch_prob as f32 };
     let flicker_prob = if cli.no_flicker { 0.0 } else { cli.flicker_prob as f32 };
-    let stuck_prob = if cli.no_stuck { 0.0 } else { cli.stuck_prob.clamp(0.0, 1.0) };
     
-    // Set values before launching
     matrix::set_glitch_probability(glitch_prob);
     matrix::set_flicker_probability(flicker_prob);
     matrix::set_min_trail(cli.min_trail);
     matrix::set_max_trail(cli.max_trail);
     matrix::set_new_drop_probability(cli.drop_prob);
     matrix::set_framerate(cli.fps as f32);
-    matrix::set_stuck_probability(stuck_prob);
-    matrix::set_stuck_max(cli.stuck_max);
+    matrix::set_stuck_probability(cli.stuck_prob);
 
     // Prebuild combined charset vector once
     let combined_charset: Vec<char> = {
@@ -121,7 +114,6 @@ fn main() -> std::io::Result<()> {
         v
     };
 
-    // Determine charset from palette string
     let charset: &[char] = match cli.palette.to_lowercase().as_str() {
         "katakana" => matrix::MATRIX_CHARS_KATAKANA,
         "alphanumeric" => matrix::MATRIX_CHARS_ALPHANUMERIC,
@@ -130,7 +122,7 @@ fn main() -> std::io::Result<()> {
         "classic" | _ => &combined_charset,
     };
 
-    // Run the matrix animation
-    matrix::run_matrix(cli.drops, cli.rgb, charset, cli.fps)
+    // 🔄 pass !cli.no_stuck (true by default)
+    matrix::run_matrix(cli.drops, cli.rgb, charset, cli.fps, !cli.no_stuck)
 }
 
