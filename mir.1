@@ -1,0 +1,126 @@
+.TH MIR 1 "2024" "mir" "User Commands"
+.SH NAME
+mir \- Make-it-Rain: Matrix rain effect for the terminal
+.SH SYNOPSIS
+.B mir
+[\fIOPTION\fR]...
+.SH DESCRIPTION
+.B mir
+creates a customizable Matrix-style digital rain effect in your terminal, featuring falling character streams with various visual effects and color schemes.
+.SH OPTIONS
+.TP
+.BR \-D ", " \-\-debug
+Enable debug output showing configuration and color reference
+.TP
+.BR \-n ", " \-\-drops " \fINUM\fR"
+Initial number of active drops (default: 10)
+.TP
+.BR \-\-rgb
+Enable RGB fade coloring instead of preset color steps
+.TP
+.BR \-c ", " \-\-color " \fICODE\fR"
+Terminal color code 0-15 (default: 10=Green). See \fBCOLORS\fR section below
+.TP
+.BR \-\-min\-trail " \fINUM\fR"
+Minimum trail length, 4-40 (default: 8)
+.TP
+.BR \-\-max\-trail " \fINUM\fR"
+Maximum trail length, 4-40 (default: 25)
+.TP
+.BR \-\-glitch\-prob " \fINUM\fR"
+Glitch character probability, 0.0-1.0 (default: 0.003)
+.TP
+.BR \-\-flicker\-prob " \fINUM\fR"
+Character flicker probability, 0.0-1.0 (default: 0.01)
+.TP
+.BR \-\-stuck\-prob " \fINUM\fR"
+Probability drops leave stuck characters, 0.0-1.0 (default: 0.02)
+.TP
+.BR \-\-drop\-prob " \fINUM\fR"
+New drop spawn probability, 0.0-1.0 (default: 0.05)
+.TP
+.BR \-\-fps " \fINUM\fR"
+Frames per second, 1-15 (default: 12)
+.TP
+.BR \-\-palette " \fINAME\fR"
+Character set: classic, katakana, alphanumeric, symbols, greek (default: classic)
+.TP
+.BR \-\-no\-stuck
+Disable stuck characters that remain after drops move
+.TP
+.BR \-\-no\-glitch
+Disable glitch effects entirely
+.TP
+.BR \-\-no\-flicker
+Disable flickering effects entirely
+.TP
+.BR \-h ", " \-\-help
+Print help information
+.TP
+.BR \-V ", " \-\-version
+Print version information
+.SH COLORS
+Terminal color codes (0-15):
+.TP
+.B 0-7 (Standard colors)
+0=Black, 1=DarkRed, 2=DarkGreen, 3=DarkYellow, 4=DarkBlue, 5=DarkMagenta, 6=DarkCyan, 7=Grey
+.TP
+.B 8-15 (Bright colors)
+8=DarkGrey, 9=Red, 10=Green, 11=Yellow, 12=Blue, 13=Magenta, 14=Cyan, 15=White
+.PP
+Colors 2 and 10 (Green variants) use the classic Matrix green gradient. All other colors use a custom fade pattern.
+.SH PALETTES
+.TP
+.B classic
+All character sets combined (katakana + alphanumeric + symbols + greek)
+.TP
+.B katakana
+Japanese half-width katakana characters (ｱｲｳ...)
+.TP
+.B alphanumeric
+Numbers and uppercase Latin letters (0-9, A-Z)
+.TP
+.B symbols
+Various Unicode box drawing and special characters
+.TP
+.B greek
+Greek uppercase letters (Α, Β, Γ...)
+.SH CONTROLS
+.TP
+.BR "q, Q, Esc"
+Quit the program
+.TP
+.BR "Ctrl+C"
+Force quit the program
+.PP
+The terminal will automatically handle window resizing.
+.SH EXAMPLES
+.TP
+.B mir
+Run with default settings (green Matrix effect)
+.TP
+.B mir \-c 9 \-\-rgb
+Red Matrix effect with RGB fading
+.TP
+.B mir \-\-palette katakana \-c 12 \-n 20
+Blue katakana characters with 20 initial drops
+.TP
+.B mir \-\-no\-glitch \-\-no\-flicker \-\-fps 8
+Clean effect without glitches or flicker at 8 FPS
+.TP
+.B mir \-\-min\-trail 15 \-\-max\-trail 30 \-\-stuck\-prob 0.1
+Longer trails with more stuck characters
+.SH FILES
+No configuration files are used. All settings are specified via command line options.
+.SH ENVIRONMENT
+The program respects standard terminal environment variables like
+.B TERM
+for terminal capability detection.
+.SH BUGS
+Report bugs at: https://github.com/saltnpepper97/mir/issues
+.SH AUTHOR
+Written by Dustin Pilgrim.
+.SH SEE ALSO
+.BR cmatrix (1),
+.BR sl (1),
+.BR figlet (1)

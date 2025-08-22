@@ -22,33 +22,32 @@ use std::{
     time::{Duration, Instant},
 };
 
+pub use crate::colors::{MatrixColorScheme, fade_color_rgb};
+
 // ==== Visual Character Sets ====
 pub const MATRIX_CHARS_KATAKANA: &[char] = &[
     'ｱ','ｲ','ｳ','ｴ','ｵ','ｶ','ｷ','ｸ','ｹ','ｺ','ｻ','ｼ','ｽ','ｾ','ｿ','ﾀ','ﾁ','ﾂ','ﾃ','ﾄ',
     'ﾅ','ﾆ','ﾇ','ﾈ','ﾉ','ﾊ','ﾋ','ﾌ','ﾍ','ﾎ','ﾏ','ﾐ','ﾑ','ﾒ','ﾓ','ﾔ','ﾕ','ﾖ','ﾗ','ﾘ',
     'ﾙ','ﾚ','ﾛ','ﾜ','ﾝ',
 ];
+
 pub const MATRIX_CHARS_ALPHANUMERIC: &[char] = &[
     '0','1','2','3','4','5','6','7','8','9',
     'A','B','C','D','E','F','G','H','I','J','K','L','M',
     'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
 ];
+
 pub const MATRIX_CHARS_SYMBOLS: &[char] = &[
     ':','·','¦','‡','†','°','¤','═','║','╔','╗','╚','╝','╠','╣','╦','╩','╬',
 ];
+
 pub const MATRIX_CHARS_GREEK: &[char] = &[
     'Α','Β','Γ','Δ','Ε','Ζ','Η','Θ','Ι','Κ','Λ','Μ','Ν','Ξ','Ο','Π','Ρ','Σ','Τ','Υ','Φ','Χ','Ψ','Ω',
 ];
+
 pub const GLITCH_CHARS: &[char] = &['▒', '▓', '░', '█'];
 
-// ==== Color Configuration ====
-const MATRIX_BRIGHT: Color = Color::White;
-const MATRIX_GREEN_MID: Color = Color::Green;
-const MATRIX_GREEN_DIM: Color = Color::DarkGreen;
-const MATRIX_GREEN_DARK: Color = Color::DarkGreen;
-const MATRIX_GREEN_DARKEST: Color = Color::Black;
-
-// ==== Tweakable Animation Config ====
+// ==== Animation Configuration ====
 static MIN_TRAIL_ATOMIC: AtomicU32 = AtomicU32::new(8);
 static MAX_TRAIL_ATOMIC: AtomicU32 = AtomicU32::new(25);
 const TRAIL_MIN_LIMIT: usize = 4;
@@ -57,15 +56,16 @@ const BASE_FRAME_DELAY: Duration = Duration::from_millis(60);
 static FRAMERATE: AtomicU32 = AtomicU32::new((12.0f32).to_bits());
 const SPEED_VARIATION: f32 = 0.3;
 
-// ==== Probability Config ====
+// ==== Probability Configuration ====
 const CHAR_CHANGE_PROBABILITY: f32 = 0.2;
 static GLITCH_PROBABILITY_ATOMIC: AtomicU32 = AtomicU32::new((0.003_f32).to_bits());
 static FLICKER_PROBABILITY_ATOMIC: AtomicU32 = AtomicU32::new((0.01_f32).to_bits());
 static NEW_DROP_PROBABILITY_ATOMIC: AtomicU32 = AtomicU32::new((0.05_f32).to_bits());
-static STUCK_PROBABILITY_ATOMIC: AtomicU32 = AtomicU32::new((0.02_f32).to_bits()); // Probability that last char sticks
+static STUCK_PROBABILITY_ATOMIC: AtomicU32 = AtomicU32::new((0.02_f32).to_bits());
 const SPEED_JITTER_PROBABILITY: f64 = 0.02;
 const SPEED_JITTER_AMOUNT: f32 = 0.05;
 
+/// A falling Matrix-style character drop
 #[derive(Clone)]
 pub struct MatrixDrop<'a> {
     x: u16,
@@ -75,18 +75,19 @@ pub struct MatrixDrop<'a> {
     speed: f32,
     chars: Vec<char>,
     last_update: Instant,
-    char_change_timers: Vec<Instant>,
     charset: &'a [char],
 }
 
 impl<'a> MatrixDrop<'a> {
+    /// Create a new Matrix drop at the given column
     pub fn new(x: u16, _rows: u16, charset: &'a [char]) -> Self {
         let mut rng = thread_rng();
         let length = rng.gen_range(get_min_trail()..=get_max_trail());
         let speed = 1.0 + rng.r#gen::<f32>() * SPEED_VARIATION;
 
-        let chars: Vec<char> = (0..length).map(|_| *charset.choose(&mut rng).unwrap()).collect();
-        let char_change_timers: Vec<Instant> = (0..length).map(|_| Instant::now()).collect();
+        let chars: Vec<char> = (0..length)
+            .map(|_| *charset.choose(&mut rng).unwrap())
+            .collect();
 
         Self {
             x,
@@ -96,11 +97,12 @@ impl<'a> MatrixDrop<'a> {
             speed,
             chars,
             last_update: Instant::now(),
-            char_change_timers,
             charset,
         }
     }
 
+    /// Update the drop's position and characters
+    /// Returns true if the drop should be reset
     pub fn update(&mut self, rows: u16) -> bool {
         let now = Instant::now();
         let dt = now.duration_since(self.last_update).as_secs_f32();
@@ -110,9 +112,10 @@ impl<'a> MatrixDrop<'a> {
         self.y += self.speed * dt * fps;
         self.last_update = now;
 
+        // Add some random speed variation
         let mut rng = thread_rng();
-        if rng.r#gen_bool(SPEED_JITTER_PROBABILITY) {
-            let delta = rng.r#gen_range(-SPEED_JITTER_AMOUNT..SPEED_JITTER_AMOUNT);
+        if rng.gen_bool(SPEED_JITTER_PROBABILITY) {
+            let delta = rng.gen_range(-SPEED_JITTER_AMOUNT..SPEED_JITTER_AMOUNT);
             self.speed = (self.speed + delta).clamp(0.5, 3.0);
         }
 
@@ -122,35 +125,28 @@ impl<'a> MatrixDrop<'a> {
         }
 
         // Update character changes
-        for i in 0..self.chars.len() {
+        for ch in &mut self.chars {
             if rng.r#gen::<f32>() < CHAR_CHANGE_PROBABILITY {
-                self.chars[i] = if rng.r#gen_bool(0.005) {
+                *ch = if rng.gen_bool(0.005) {
                     *GLITCH_CHARS.choose(&mut rng).unwrap()
                 } else {
                     *self.charset.choose(&mut rng).unwrap()
                 };
-                self.char_change_timers[i] = now;
             }
         }
 
         false // Drop is still active
     }
 
+    /// Render the drop to the terminal
     pub fn render(
         &self, 
         w: &mut impl Write, 
         rows: u16, 
         use_rgb_fade: bool, 
+        color_scheme: MatrixColorScheme,
         sticky_chars: &mut HashMap<(u16, u16), (char, Instant)>
     ) -> std::io::Result<()> {
-        fn fade_color((r, g, b): (u8, u8, u8), alpha: f32) -> Color {
-            Color::Rgb {
-                r: (r as f32 * alpha).clamp(0.0, 255.0) as u8,
-                g: (g as f32 * alpha).clamp(0.0, 255.0) as u8,
-                b: (b as f32 * alpha).clamp(0.0, 255.0) as u8,
-            }
-        }
-
         // Clear the previous tail, but check for sticky characters first
         let old_tail_y = (self.prev_y - self.length as f32).floor() as i32;
         let new_tail_y = (self.y - self.length as f32).floor() as i32;
@@ -168,6 +164,9 @@ impl<'a> MatrixDrop<'a> {
             }
         }
 
+        // Get color scheme colors
+        let (bright, mid, dim, dark, darkest) = color_scheme.get_colors();
+
         // Render current drop characters
         for (i, &ch) in self.chars.iter().enumerate() {
             let char_y = self.y - i as f32;
@@ -180,23 +179,23 @@ impl<'a> MatrixDrop<'a> {
 
             let color = if use_rgb_fade {
                 if i == 0 {
-                    MATRIX_BRIGHT
+                    bright
                 } else {
-                    let base_green = (0, 255, 0);
+                    let base_rgb = color_scheme.get_base_rgb();
                     let alpha = 1.0 - (i as f32 / self.length as f32).powf(1.3);
-                    fade_color(base_green, alpha)
+                    fade_color_rgb(base_rgb, alpha)
                 }
             } else {
                 match i {
-                    0 => MATRIX_BRIGHT,
-                    1..=3 => MATRIX_GREEN_MID,
-                    4..=8 => MATRIX_GREEN_DIM,
-                    9..=15 => MATRIX_GREEN_DARK,
-                    _ => MATRIX_GREEN_DARKEST,
+                    0 => bright,
+                    1..=3 => mid,
+                    4..=8 => dim,
+                    9..=15 => dark,
+                    _ => darkest,
                 }
             };
 
-            let ch = if glitch {
+            let display_char = if glitch {
                 *GLITCH_CHARS.choose(&mut thread_rng()).unwrap_or(&ch)
             } else if flicker {
                 ' '
@@ -208,13 +207,13 @@ impl<'a> MatrixDrop<'a> {
             // Remove any sticky character at this position (drop overwrites it)
             sticky_chars.remove(&pos);
             
-            queue!(w, MoveTo(self.x, char_y as u16), SetForegroundColor(color), Print(ch))?;
+            queue!(w, MoveTo(self.x, char_y as u16), SetForegroundColor(color), Print(display_char))?;
         }
 
         Ok(())
     }
 
-    // Check if this drop should leave a stuck character when it resets
+    /// Check if this drop should leave a stuck character when it resets
     pub fn should_leave_sticky(&self, rows: u16) -> Option<(u16, u16, char)> {
         if self.y > rows as f32 + self.length as f32 {
             let mut rng = thread_rng();
@@ -230,6 +229,7 @@ impl<'a> MatrixDrop<'a> {
     }
 }
 
+/// Clean up the terminal state on exit
 fn cleanup_terminal(stdout: &mut std::io::Stdout) {
     let _ = execute!(
         stdout,
@@ -241,16 +241,19 @@ fn cleanup_terminal(stdout: &mut std::io::Stdout) {
     let _ = disable_raw_mode();
 }
 
+/// Main Matrix effect runner
 pub fn run_matrix(
     initial_drops: usize,
     use_rgb_fade: bool,
     charset: &[char],
     fps: u32,
     enable_stuck: bool,
+    color_scheme: MatrixColorScheme,
 ) -> std::io::Result<()> {
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
 
+    // Set up Ctrl+C handler
     ctrlc::set_handler(move || {
         r.store(false, Ordering::SeqCst);
     }).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
@@ -264,6 +267,7 @@ pub fn run_matrix(
     let mut drops: Vec<Option<MatrixDrop>> = vec![None; cols as usize];
     let mut sticky_chars: HashMap<(u16, u16), (char, Instant)> = HashMap::new();
 
+    // Randomize initial drop positions
     let mut columns: Vec<u16> = (0..cols).collect();
     columns.shuffle(&mut rng);
 
@@ -274,11 +278,13 @@ pub fn run_matrix(
     execute!(stdout, EnterAlternateScreen, Hide, Clear(ClearType::All))?;
     let mut last_spawn_check = Instant::now();
 
+    // Main animation loop
     'main: loop {
         if !running.load(Ordering::SeqCst) {
             break 'main;
         }
 
+        // Handle input events
         if poll(Duration::from_millis(1))? {
             match read()? {
                 Event::Key(key) => match (key.code, key.modifiers) {
@@ -311,7 +317,7 @@ pub fn run_matrix(
             });
         }
 
-        // Spawn new drops
+        // Spawn new drops periodically
         let now = Instant::now();
         if now.duration_since(last_spawn_check).as_secs_f32() > 0.2 {
             for (x, drop_slot) in drops.iter_mut().enumerate() {
@@ -322,11 +328,14 @@ pub fn run_matrix(
             last_spawn_check = now;
         }
 
+        // Get stuck character color
+        let (_, _, stuck_color, _, _) = color_scheme.get_colors();
+
         // Render stuck characters first (so drops can overwrite them)
         if enable_stuck {
             for (&(x, y), &(ch, _)) in sticky_chars.iter() {
                 if y < rows {
-                    queue!(stdout, MoveTo(x, y), SetForegroundColor(MATRIX_GREEN_DIM), Print(ch))?;
+                    queue!(stdout, MoveTo(x, y), SetForegroundColor(stuck_color), Print(ch))?;
                 }
             }
         }
@@ -346,7 +355,7 @@ pub fn run_matrix(
                 if should_reset {
                     *drop = MatrixDrop::new(drop.x, rows, charset);
                 } else {
-                    drop.render(&mut stdout, rows, use_rgb_fade, &mut sticky_chars)?;
+                    drop.render(&mut stdout, rows, use_rgb_fade, color_scheme, &mut sticky_chars)?;
                 }
             }
         }
@@ -360,7 +369,8 @@ pub fn run_matrix(
     Ok(())
 }
 
-/// Getters and Setters
+// ==== Configuration Getters and Setters ====
+
 pub fn set_framerate(fps: f32) {
     let fps = fps.clamp(1.0, 15.0);
     FRAMERATE.store(fps.to_bits(), Ordering::Relaxed);
@@ -423,4 +433,3 @@ pub fn set_new_drop_probability(prob: f32) {
 pub fn get_new_drop_probability() -> f32 {
     f32::from_bits(NEW_DROP_PROBABILITY_ATOMIC.load(Ordering::Relaxed))
 }
-

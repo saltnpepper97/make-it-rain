@@ -1,5 +1,7 @@
 # 🌧️ Make It Rain - Terminal Matrix Effect
 
+[![AUR](https://img.shields.io/badge/AUR-available-blue.svg)](https://aur.archlinux.org/packages/make-it-rain)
+
 <p align="center">
   <img src="assets/mir.gif" alt="Demo" />
 </p>
@@ -10,17 +12,17 @@ A fast, customizable **Matrix rain animation** for your terminal written in Rust
 
 ## ✨ Features
 
-
 - Smooth falling Matrix drops with variable speed and trail length  
 - RGB fade or classic green shading  
 - Glitching and flickering effects for dynamic visuals  
-- Stuck characters left behind by drops, controllable or disableable  
+- Stuck characters left behind by drops, disableable  
 - Configurable frame rate and character palettes  
 - Built with `crossterm` for fast terminal rendering
 
 ---
 
 ## ⚙️ Options
+
 ```
   -D, --debug                        Enable debug output
   -n, --drops <DROPS>                Initial number of active drops [default: 10]
@@ -44,8 +46,25 @@ A fast, customizable **Matrix rain animation** for your terminal written in Rust
 
 ## 🚀 Installation
 
-Make sure you have Rust installed. Then:
+### 📦 Arch Linux (AUR)
 
+**Using an AUR helper (yay, paru, etc.):**
+```bash
+yay -S make-it-rain
+# or
+paru -S make-it-rain
+```
+
+**Manual AUR installation:**
+```bash
+git clone https://aur.archlinux.org/make-it-rain.git
+cd make-it-rain
+makepkg -si
+```
+
+### 🦀 Build from Source
+
+Make sure you have Rust installed. Then:
 ```bash
 git clone https://github.com/yourusername/make-it-rain.git
 cd make-it-rain
