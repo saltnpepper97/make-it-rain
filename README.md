@@ -66,6 +66,6 @@ makepkg -si
 
 Make sure you have Rust installed. Then:
 ```bash
-git clone https://github.com/yourusername/make-it-rain.git
+git clone https://github.com/saltnpepper97/make-it-rain.git
 cd make-it-rain
 cargo build --release

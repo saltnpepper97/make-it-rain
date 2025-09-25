@@ -1,10 +1,22 @@
 [package]
-name = "mir"
-version = "1.1.1"
+name = "make-it-rain"
+version = "1.2.1"
 edition = "2024"
+authors = ["Dustin Pilgrim <dustin.pilgrim1997@gmail.com>"]
+description = "A terminal Matrix rain effect, configurable and hackable"
+license = "MIT"
+repository = "https://github.com/saltnpepper97/make-it-rain"
+readme = "README.md"
+categories = ["command-line-utilities", "visualization"]
+keywords = ["matrix", "terminal", "cli", "rain", "ascii"]
+
+[[bin]]
+name = "mir"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.5.41", features = ["derive"] }
-crossterm = "0.27"
+crossterm = "0.29.0"
 ctrlc = "3.2"
-rand = "0.8"
+rand = "0.9.2"
+

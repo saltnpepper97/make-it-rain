@@ -9,8 +9,8 @@ use crossterm::{
     },
 };
 use ctrlc;
-use rand::{thread_rng, Rng};
-use rand::prelude::SliceRandom;
+use rand::{rng, Rng};
+use rand::prelude::{SliceRandom, IndexedRandom};
 use std::{
     collections::HashMap,
     io::{stdout, Write},
@@ -81,9 +81,9 @@ pub struct MatrixDrop<'a> {
 impl<'a> MatrixDrop<'a> {
     /// Create a new Matrix drop at the given column
     pub fn new(x: u16, _rows: u16, charset: &'a [char]) -> Self {
-        let mut rng = thread_rng();
-        let length = rng.gen_range(get_min_trail()..=get_max_trail());
-        let speed = 1.0 + rng.r#gen::<f32>() * SPEED_VARIATION;
+        let mut rng = rng();
+        let length = rng.random_range(get_min_trail()..=get_max_trail());
+        let speed = 1.0 + rng.random::<f32>() * SPEED_VARIATION;
 
         let chars: Vec<char> = (0..length)
             .map(|_| *charset.choose(&mut rng).unwrap())
@@ -113,9 +113,9 @@ impl<'a> MatrixDrop<'a> {
         self.last_update = now;
 
         // Add some random speed variation
-        let mut rng = thread_rng();
-        if rng.gen_bool(SPEED_JITTER_PROBABILITY) {
-            let delta = rng.gen_range(-SPEED_JITTER_AMOUNT..SPEED_JITTER_AMOUNT);
+        let mut rng = rng();
+        if rng.random_bool(SPEED_JITTER_PROBABILITY) {
+            let delta = rng.random_range(-SPEED_JITTER_AMOUNT..SPEED_JITTER_AMOUNT);
             self.speed = (self.speed + delta).clamp(0.5, 3.0);
         }
 
@@ -126,8 +126,8 @@ impl<'a> MatrixDrop<'a> {
 
         // Update character changes
         for ch in &mut self.chars {
-            if rng.r#gen::<f32>() < CHAR_CHANGE_PROBABILITY {
-                *ch = if rng.gen_bool(0.005) {
+            if rng.random::<f32>() < CHAR_CHANGE_PROBABILITY {
+                *ch = if rng.random_bool(0.005) {
                     *GLITCH_CHARS.choose(&mut rng).unwrap()
                 } else {
                     *self.charset.choose(&mut rng).unwrap()
@@ -174,8 +174,8 @@ impl<'a> MatrixDrop<'a> {
                 continue;
             }
 
-            let flicker = thread_rng().gen_bool(get_flicker_probability() as f64);
-            let glitch = thread_rng().gen_bool(get_glitch_probability() as f64);
+            let flicker = rng().random_bool(get_flicker_probability() as f64);
+            let glitch = rng().random_bool(get_glitch_probability() as f64);
 
             let color = if use_rgb_fade {
                 if i == 0 {
@@ -196,7 +196,7 @@ impl<'a> MatrixDrop<'a> {
             };
 
             let display_char = if glitch {
-                *GLITCH_CHARS.choose(&mut thread_rng()).unwrap_or(&ch)
+                *GLITCH_CHARS.choose(&mut rng()).unwrap_or(&ch)
             } else if flicker {
                 ' '
             } else {
@@ -216,11 +216,11 @@ impl<'a> MatrixDrop<'a> {
     /// Check if this drop should leave a stuck character when it resets
     pub fn should_leave_sticky(&self, rows: u16) -> Option<(u16, u16, char)> {
         if self.y > rows as f32 + self.length as f32 {
-            let mut rng = thread_rng();
-            if rng.r#gen::<f32>() < get_stuck_probability() {
+            let mut rng = rng();
+            if rng.random::<f32>() < get_stuck_probability() {
                 // Pick the last character and a random position on screen
                 if let Some(&last_char) = self.chars.last() {
-                    let stick_y = rng.gen_range(0..rows);
+                    let stick_y = rng.random_range(0..rows);
                     return Some((self.x, stick_y, last_char));
                 }
             }
@@ -263,7 +263,7 @@ pub fn run_matrix(
     let mut stdout = stdout();
     enable_raw_mode()?;
     let (mut cols, mut rows) = size()?;
-    let mut rng = thread_rng();
+    let mut rng = rng();
     let mut drops: Vec<Option<MatrixDrop>> = vec![None; cols as usize];
     let mut sticky_chars: HashMap<(u16, u16), (char, Instant)> = HashMap::new();
 
@@ -298,7 +298,7 @@ pub fn run_matrix(
                     sticky_chars.clear();
                     execute!(stdout, Clear(ClearType::All))?;
                     drops = (0..cols)
-                        .map(|x| if rng.r#gen::<f32>() < 0.3 { 
+                        .map(|x| if rng.random::<f32>() < 0.3 { 
                             Some(MatrixDrop::new(x, rows, charset)) 
                         } else { 
                             None 
@@ -321,7 +321,7 @@ pub fn run_matrix(
         let now = Instant::now();
         if now.duration_since(last_spawn_check).as_secs_f32() > 0.2 {
             for (x, drop_slot) in drops.iter_mut().enumerate() {
-                if drop_slot.is_none() && rng.r#gen::<f32>() < get_new_drop_probability() {
+                if drop_slot.is_none() && rng.random::<f32>() < get_new_drop_probability() {
                     *drop_slot = Some(MatrixDrop::new(x as u16, rows, charset));
                 }
             }
@@ -433,3 +433,4 @@ pub fn set_new_drop_probability(prob: f32) {
 pub fn get_new_drop_probability() -> f32 {
     f32::from_bits(NEW_DROP_PROBABILITY_ATOMIC.load(Ordering::Relaxed))
 }
+
