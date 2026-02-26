@@ -1,6 +1,6 @@
 [package]
 name = "make-it-rain"
-version = "1.2.1"
+version = "1.2.2"
 edition = "2024"
 authors = ["Dustin Pilgrim <dustin.pilgrim1997@gmail.com>"]
 description = "A terminal Matrix rain effect, configurable and hackable"
