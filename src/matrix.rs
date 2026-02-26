@@ -9,7 +9,7 @@ use crossterm::{
     },
 };
 use ctrlc;
-use rand::{rng, Rng};
+use rand::{rng, RngExt};
 use rand::prelude::{SliceRandom, IndexedRandom};
 use std::{
     collections::HashMap,
